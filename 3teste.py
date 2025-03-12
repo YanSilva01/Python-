@@ -1,0 +1,90 @@
+import tkinter as tk
+from tkinter import messagebox
+import sqlite3
+from datetime import datetime
+
+# Conectando ao banco de dados SQLite
+conn = sqlite3.connect('fluxo_de_caixa.db')
+c = conn.cursor()
+
+# Criando a tabela de transações
+c.execute('''CREATE TABLE IF NOT EXISTS transacoes
+             (data TEXT, tipo TEXT, descricao TEXT, valor REAL)''')
+conn.commit()
+
+# Função para registrar uma transação
+def registrar_transacao(tipo, descricao, valor):
+    c.execute("INSERT INTO transacoes VALUES (?, ?, ?, ?)", (datetime.now(), tipo, descricao, valor))
+    conn.commit()
+    messagebox.showinfo("Sucesso", "Transação registrada com sucesso!")
+
+# Função para exibir o fluxo de caixa
+def exibir_fluxo_de_caixa():
+    c.execute("SELECT * FROM transacoes")
+    rows = c.fetchall()
+    fluxo = ""
+    for row in rows:
+        fluxo += f"{row}\n"
+    messagebox.showinfo("Fluxo de Caixa", fluxo)
+
+# Função para calcular o lucro
+def calcular_lucro():
+    c.execute("SELECT * FROM transacoes")
+    rows = c.fetchall()
+    total_vendas = 0
+    total_despesas = 0
+    for row in rows:
+        if row[1] == 'venda':
+            total_vendas += row[3]
+        elif row[1] == 'despesa':
+            total_despesas += row[3]
+    lucro = total_vendas - total_despesas
+    messagebox.showinfo("Lucro", f"Total de Vendas: R${total_vendas:.2f}\nTotal de Despesas: R${total_despesas:.2f}\nLucro: R${lucro:.2f}")
+
+# Função para registrar venda
+def registrar_venda():
+    descricao = descricao_entry.get()
+    valor = valor_entry.get()
+    try:
+        valor = float(valor)
+        registrar_transacao('venda', descricao, valor)
+    except ValueError:
+        messagebox.showerror("Erro", "Valor inválido")
+
+# Função para registrar despesa
+def registrar_despesa():
+    descricao = descricao_entry.get()
+    valor = valor_entry.get()
+    try:
+        valor = float(valor)
+        registrar_transacao('despesa', descricao, valor)
+    except ValueError:
+        messagebox.showerror("Erro", "Valor inválido")
+
+# Criando a interface gráfica
+root = tk.Tk()
+root.title("Sistema de Fluxo de Caixa")
+
+# Configurando o layout
+root.geometry("400x300")
+root.configure(bg="#f0f0f0")
+
+# Adicionando widgets
+tk.Label(root, text="Descrição:", bg="#f0f0f0").grid(row=0, column=0, padx=10, pady=10)
+descricao_entry = tk.Entry(root)
+descricao_entry.grid(row=0, column=1, padx=10, pady=10)
+
+tk.Label(root, text="Valor:", bg="#f0f0f0").grid(row=1, column=0, padx=10, pady=10)
+valor_entry = tk.Entry(root)
+valor_entry.grid(row=1, column=1, padx=10, pady=10)
+
+tk.Button(root, text="Registrar Venda", command=registrar_venda, bg="#4CAF50", fg="white").grid(row=2, column=0, padx=10, pady=10)
+tk.Button(root, text="Registrar Despesa", command=registrar_despesa, bg="#f44336", fg="white").grid(row=2, column=1, padx=10, pady=10)
+tk.Button(root, text="Exibir Fluxo de Caixa", command=exibir_fluxo_de_caixa, bg="#2196F3", fg="white").grid(row=3, column=0, padx=10, pady=10)
+tk.Button(root, text="Calcular Lucro", command=calcular_lucro, bg="#FF9800", fg="white").grid(row=3, column=1, padx=10, pady=10)
+tk.Button(root, text="Sair", command=root.quit, bg="#9E9E9E", fg="white").grid(row=4, column=0, columnspan=2, padx=10, pady=10)
+
+root.mainloop()
+
+# Fechando a conexão com o banco de dados
+conn.close()
